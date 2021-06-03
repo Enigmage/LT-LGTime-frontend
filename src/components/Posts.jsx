@@ -8,19 +8,27 @@ import {
     CardTitle,
     CardSubtitle,
     Button,
+    Spinner,
 } from "reactstrap";
 import { addDistance } from "../utils";
 
 export const Posts = ({ isLogin, longitude, latitude, error }) => {
     const [appData, setData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(null);
     const handleDelete = async (id) => {
         const headerObject = {
             token: localStorage.getItem("token"),
         };
         try {
-            await axios.delete(`${process.env.REACT_APP_API_URL}/posts/delete/${id}`, {
-                headers: headerObject,
-            });
+            setDeleting(id);
+            await axios.delete(
+                `${process.env.REACT_APP_API_URL}/posts/delete/${id}`,
+                {
+                    headers: headerObject,
+                }
+            );
+            setDeleting(null);
             setData(appData.filter((value) => value._id !== id));
         } catch (err) {
             console.log(err);
@@ -29,9 +37,11 @@ export const Posts = ({ isLogin, longitude, latitude, error }) => {
     useEffect(() => {
         const fetchAllPosts = async () => {
             try {
+                setLoading(true);
                 const response = await axios.get(
                     `${process.env.REACT_APP_API_URL}/posts/all`
                 );
+                setLoading(false);
                 if (!error && longitude && latitude) {
                     const newData = addDistance(
                         latitude,
@@ -52,9 +62,14 @@ export const Posts = ({ isLogin, longitude, latitude, error }) => {
     }, []);
     return (
         <div className="container pt-3 px-5">
+            {loading && (
+                <div align="center">
+                    <Spinner color="dark" />
+                </div>
+            )}
             {appData.map((value) => (
                 <div key={value._id} className="dashboard">
-                    <Card className="mx-5" style={{backgroundColor:"black"}}>
+                    <Card className="mx-5" style={{ backgroundColor: "black" }}>
                         {value.img && (
                             <CardImg
                                 top
@@ -62,7 +77,7 @@ export const Posts = ({ isLogin, longitude, latitude, error }) => {
                                 alt="Card image cap"
                             />
                         )}
-                        <CardBody style={{color:"whitesmoke"}}>
+                        <CardBody style={{ color: "whitesmoke" }}>
                             <CardTitle tag="h5">{value.title}</CardTitle>
                             <CardSubtitle>{value.country}</CardSubtitle>
                             <CardText>{value.text}</CardText>
@@ -70,7 +85,9 @@ export const Posts = ({ isLogin, longitude, latitude, error }) => {
                                 <Button
                                     className="btn-danger"
                                     onClick={() => handleDelete(value._id)}>
-                                    Delete
+                                    {deleting === value._id
+                                        ? "Deleting..."
+                                        : "Delete"}
                                 </Button>
                             )}
                         </CardBody>
